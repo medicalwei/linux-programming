@@ -43,7 +43,7 @@ short swapShort(short in)
 unsigned fetchGlobalHeader(int fp, pcap_hdr_t* globalHeader)
 {
 	int result;
-	result = read (fp, globalHeader, 24);
+	result = read (fp, globalHeader, sizeof(pcap_hdr_t));
 
 	swapped = 0;
 	if (globalHeader->magic_number == 0xd4c3b2a1)
@@ -61,7 +61,7 @@ unsigned fetchGlobalHeader(int fp, pcap_hdr_t* globalHeader)
 
 unsigned fetchRecordHeader(int fp, pcaprec_hdr_t* recordHeader)
 {
-	return read(fp, recordHeader, 16);
+	return read(fp, recordHeader, sizeof(pcaprec_hdr_t));
 }
 
 
