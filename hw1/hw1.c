@@ -16,11 +16,12 @@ int swapInt(int in)
 	if(swapped)
 	{
 		int out;
-		char* c = (char *) &out;
-		c[0] = in;
-		c[1] = in >> 8;
-		c[2] = in >> 16;
-		c[3] = in >> 24;
+		char* ci = (char *) &in;
+		char* co = (char *) &out;
+		co[0] = ci[3];
+		co[1] = ci[2];
+		co[2] = ci[1];
+		co[3] = ci[0];
 		return out;
 	}
 	return in;
@@ -31,9 +32,10 @@ short swapShort(short in)
 	if(swapped)
 	{
 		short out;
-		char* c = (char *) &out;
-		c[0] = in;
-		c[1] = in >> 8;
+		char* ci = (char *) &in;
+		char* co = (char *) &out;
+		co[0] = ci[1];
+		co[1] = ci[0];
 		return out;
 	}
 	return in;
