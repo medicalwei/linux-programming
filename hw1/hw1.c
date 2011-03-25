@@ -1,5 +1,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,6 +8,7 @@
 #include "ip_headers.h"
 
 #define READ_BUFFER_SIZE 8192
+#define IP_BUFFER_SIZE 32
 
 int swapped;
 
@@ -79,6 +81,7 @@ int main(int argc, const char *argv[])
 	pcaprec_hdr_t* recordHeader = (pcaprec_hdr_t*) recordHeaderContent;
 	unsigned int recordCount = 0;
 	char buffer[READ_BUFFER_SIZE];
+	char ipCharacterBuffer[IP_BUFFER_SIZE];
 
 	ether_header_t* etherHeader;
 	ipv4_header_t* ipv4Header;
@@ -130,21 +133,19 @@ int main(int argc, const char *argv[])
 		ipv4Header=(ipv4_header_t *) (buffer
 				+sizeof(ether_header_t));
 
-		printf ("%u.%06u %u/%u %u.%u.%u.%u -> %u.%u.%u.%u (%u)",
+
+
+		printf ("%u.%06u %u/%u %s -> %s (%u)", 
 				swapInt(recordHeader->ts_sec),
 				swapInt(recordHeader->ts_usec),
 				swapInt(recordHeader->incl_len),
 				swapInt(recordHeader->orig_len),
-				ipv4Header->ip_src.addr[0],
-				ipv4Header->ip_src.addr[1],
-				ipv4Header->ip_src.addr[2],
-				ipv4Header->ip_src.addr[3],
-				ipv4Header->ip_dst.addr[0],
-				ipv4Header->ip_dst.addr[1],
-				ipv4Header->ip_dst.addr[2],
-				ipv4Header->ip_dst.addr[3],
+				inet_ntoa (ipv4Header->ip_src),
+				inet_ntoa (ipv4Header->ip_dst),
 				ipv4Header->ip_p
-			); 
+			);
+
+
 
 		if (ipv4Header->ip_p == 17)
 		{

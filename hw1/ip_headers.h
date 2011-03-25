@@ -1,12 +1,9 @@
+#include <arpa/inet.h>
 typedef struct ether_header_s {
 	unsigned char ether_dhost[6];
 	unsigned char ether_shost[6];
 	unsigned short ether_type;
 } __attribute__ ((__packed__)) ether_header_t;
-
-typedef struct ipv4addr_s{
-	unsigned char addr[4];
-} __attribute__ ((__packed__)) ipv4addr_t;
 
 /* from Wikipedia: http://en.wikipedia.org/wiki/Ip_(struct) */
 typedef struct ipv4_header_s {
@@ -19,8 +16,8 @@ typedef struct ipv4_header_s {
 	unsigned char ip_ttl;
 	unsigned char ip_p;
 	unsigned short ip_sum;
-	ipv4addr_t ip_src;
-	ipv4addr_t ip_dst;
+	struct in_addr ip_src;
+	struct in_addr ip_dst;
 } __attribute__ ((__packed__)) ipv4_header_t;
 
 typedef struct udp_header_s {
