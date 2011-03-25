@@ -166,7 +166,7 @@ int main (int argc, const char *argv[])
 				swapInt (recordHeader->ts_sec),
 				swapInt (recordHeader->ts_usec),
 				swapInt (recordHeader->incl_len),
-				swapInt (recordHeader->orig_len),
+				swapInt (recordHeader->orig_len)
 			);
 		printf (" %s", inet_ntoa (ipv4Header->ip_src));
 		printf (" -> %s", inet_ntoa (ipv4Header->ip_dst));
