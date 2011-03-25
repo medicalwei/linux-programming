@@ -7,4 +7,4 @@ It is free to copy for your homework because of license (and I don't have enough
 
 License
 -------
-The code of this license is under GNU GPL v3 unless mentioned elsewhere.
+The code is licensed under GNU Generic Public License (GPL) v3 unless mentioned elsewhere.
