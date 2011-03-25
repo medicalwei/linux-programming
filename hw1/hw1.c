@@ -100,7 +100,7 @@ int main(int argc, const char *argv[])
 
 	if (!fetchGlobalHeader(fp, globalHeader))
 	{
-		fprintf(stderr, "Error: File format not correct (maybe ordering is not right)\n");
+		fprintf(stderr, "Error: File format not correct\n");
 		return 4;
 	}
 
