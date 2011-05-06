@@ -27,6 +27,9 @@ bool parseUrl (char *url, char *domainName, unsigned short *port, char *path)
 	const char **listptr;
 	pcre *regexp;
 
+
+	*port = 0;
+
 	
 	/* compiling RE */
 	regexp = pcre_compile ("^http://([\\w\\d\\.\\-]+)(\\:\\d+)?(.*)$", 0, &error, &erroffset, NULL);
@@ -96,7 +99,7 @@ int sendHttpRequest (char *url, char *buffer)
 	struct sockaddr_in addr;
 
 	/* used to count length */
-	int len=0, clen;
+	int len=0, totalLen=0;
 
 	/* used to assemble message sending to the host */
 	char sendBuffer[OPTBUFFER];
@@ -134,7 +137,6 @@ int sendHttpRequest (char *url, char *buffer)
 	connect (sockfd, (struct sockaddr *) &addr, sizeof (struct sockaddr));
 
 	send (sockfd, sendBuffer, strlen(sendBuffer), 0);
-
 
 
 
