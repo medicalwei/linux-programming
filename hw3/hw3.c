@@ -64,12 +64,19 @@ char pageContainerFooter[] =
 "</body>\n"
 "</html>\n";
 
+char *parameterBuffer=NULL, *inputBuffer=NULL;
+
 #define WRITE_OK 16
 #define FORBIDDEN 8
 #define FILE_NOT_SUPPORTED 4
 #define NOT_EXIST 2
 #define IS_DIR 1
 #define IS_FILE 0
+
+#define GET 1
+#define POST 2
+#define PUT 3
+#define DELETE 4
 
 int outputErrorMessage (int fd, char *outputBuffer, char *errorTitle, char *errorContent)
 {
@@ -141,6 +148,8 @@ int writeFile (int fd, char *uriBuffer, char *outputBuffer)
 	int buflen = 0;
 	char* fstr = NULL;
 	int i, ret, len, file_fd;
+	char uriBuffer2[BUFSIZE+1];
+	FILE *cgi_fd;
 
 	buflen = strlen(uriBuffer);
 
@@ -153,13 +162,35 @@ int writeFile (int fd, char *uriBuffer, char *outputBuffer)
 		}
 	}
 
+	/* cgi */
+	if(strncmp(uriBuffer, "cgi-bin/", 8) == 0)
+	{
+		strcpy (uriBuffer2, "./");
+		strncat (uriBuffer2, uriBuffer, BUFSIZE);
+		cgi_fd = popen (uriBuffer2, "r");
+		if(!cgi_fd)
+		{
+			sprintf(outputBuffer,"HTTP/1.1 403 Forbidden\r\n");
+			write(fd, outputBuffer, strlen(outputBuffer));
+			outputErrorMessage(fd, outputBuffer, "403 — Forbiden", "The web server doesn't have permission to access this page.");
+			return FORBIDDEN;
+		}
+		sprintf(outputBuffer,"HTTP/1.1 200 OK\r\n", fstr);
+		write(fd, outputBuffer, strlen(outputBuffer));
+		while (fgets(outputBuffer, BUFSIZE, cgi_fd)) {
+			write(fd, outputBuffer, strlen(outputBuffer));
+		}
+		fclose(cgi_fd);
+		return WRITE_OK;
+	}
 	/* open file */
-	if (!(file_fd=open(uriBuffer, O_RDONLY))) {
+	else if (!(file_fd=open(uriBuffer, O_RDONLY))) {
 		sprintf(outputBuffer,"HTTP/1.1 403 Forbidden\r\n");
 		write(fd, outputBuffer, strlen(outputBuffer));
 		outputErrorMessage(fd, outputBuffer, "403 — Forbiden", "The web server doesn't have permission to access this page.");
 		return FORBIDDEN;
 	}
+
 
 	/* file unsupported */
 	if(fstr == 0) {
@@ -177,6 +208,8 @@ int writeFile (int fd, char *uriBuffer, char *outputBuffer)
 	while ((ret=read(file_fd, outputBuffer, BUFSIZE))>0) {
 		write(fd, outputBuffer, ret);
 	}
+
+	close(file_fd);
 
 	return WRITE_OK;
 }
@@ -207,10 +240,11 @@ void handle_socket(int fd)
 	static char cmdBuffer[BUFSIZE+1], uriBuffer2[BUFSIZE+1];
 	static char outputBuffer[BUFSIZE+1];
 	static char *uriBuffer;
+	int requestType;
 
 	ret = read(fd,cmdBuffer,BUFSIZE);   /* get browser config */
 	if (ret==0||ret==-1) {
-	 /* connection broken */
+		/* connection broken */
 		exit(3);
 	}
 
@@ -229,19 +263,34 @@ void handle_socket(int fd)
 		}
 	}
 	
-	/* TODO: answer POST requests when it is CGI */
-	/* only receive GET */
-	if (strncmp(cmdBuffer,"GET ",4)&&strncmp(cmdBuffer,"get ",4))
+	/* answer POST requests when it is CGI */
+	if (strncmp(cmdBuffer,"GET ",4) == 0 || strncmp(cmdBuffer,"get ",4) == 0)
+	{
+		setenv("REQUEST_METHOD", "GET" , 1);
+		uriBuffer = &cmdBuffer[5];
+		requestType = GET;
+	}
+	else if (strncmp(cmdBuffer,"POST ",5) == 0 || strncmp(cmdBuffer,"post ",5) == 0)
+	{
+		setenv("REQUEST_METHOD", "POST", 1);
+		uriBuffer = &cmdBuffer[6];
+		requestType = POST;
+	}
+	else
 	{
 		exit(3);
 	}
 	
 
 	/* use null character */
-	for(i=4;i<BUFSIZE;i++) {
+	for(i=0;i<ret;i++) {
 		if(cmdBuffer[i] == ' ') {
 			cmdBuffer[i] = 0;
-			break;
+		}
+
+		if(requestType == GET && cmdBuffer[i] == '?' && parameterBuffer == NULL) {
+			cmdBuffer[i] = 0;
+			parameterBuffer = &cmdBuffer[i+1];
 		}
 	}
 
@@ -254,8 +303,23 @@ void handle_socket(int fd)
 		}
 	}
 
+	if (requestType == POST)
+	{
+		for (i=0;i<ret-3;i++)
+		{
+			if (cmdBuffer[i]==0 && cmdBuffer[i+1]==0 && cmdBuffer[i+2]==0 && cmdBuffer[i+3]==0 && inputBuffer == NULL)
+			{
+				inputBuffer = &cmdBuffer[i+4];
+			}
+		}
+	}
+
+	if (parameterBuffer)
+	{
+		setenv("QUERY_STRING", parameterBuffer, 1);
+	}
+
 	/* get URI string */
-	uriBuffer = &cmdBuffer[5];
 	urilen = strlen(uriBuffer);
 
 	if (urilen == 0)
