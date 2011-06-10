@@ -35,24 +35,32 @@ struct {
 char siteUri[] = "http://localhost";
 int portNumber;
 
-char listContainerHeader[] = 
-"HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"
+char pageContainerHeader[] = 
+"Content-Type: text/html; charset=utf-8\r\n\r\n"
 "<!DOCTYPE html>\n"
 "<html>\n"
 "<head>\n"
 "	<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">\n"
-"	<title>Index of %s</title>\n"
-"	<style>html{font-family:\"Helvetica Neue\",\"Helvetica\",\"Nimbus Sans\",\"Arial\",\"微軟正黑體\",\"Microsoft JhengHei\",\"LiHei Pro\",sans-serif;color:#666;background:url(\"artworks/ntou.png\") 95\% bottom no-repeat #ccc;min-height:100\%;}body{width:720px;margin:0 auto;padding:0 0 40pt;font-weight:300;}h1{font-weight:500;text-shadow:0 2px 0 rgba(0,0,0,0.2),0 -1px 0 rgba(255,255,255,0.2);color:#666;margin-top:40pt;}a{color:#333;border-bottom:1px solid #ccc;text-decoration:none;-webkit-transition:border-color 0.3s linear;-moz-transition:border-color 0.3s linear;-o-transition:border-color 0.3s linear;transition:border-color 0.3s linear;}a:hover{border-bottom:1px solid #999;-webkit-transition:border-color 0.1s linear;-moz-transition:border-color 0.1s linear;-o-transition:border-color 0.1s linear;transition:border-color 0.1s linear;}</style>\n"
+"	<title>%s</title>\n"
+"	<style>html{font-family:\"Helvetica Neue\",\"Helvetica\",\"Nimbus Sans\",\"Arial\",sans-serif;color:#666;background:url(\"artworks/ntou.png\") 95\% bottom no-repeat #ccc;min-height:100\%;}body{width:720px;margin:0 auto;padding:0 0 40pt;font-weight:300;}h1{font-weight:500;text-shadow:0 2px 0 rgba(0,0,0,0.2),0 -1px 0 rgba(255,255,255,0.2);color:#666;margin-top:40pt;}a{color:#333;border-bottom:1px solid #ccc;text-decoration:none;-webkit-transition:border-color 0.3s linear;-moz-transition:border-color 0.3s linear;-o-transition:border-color 0.3s linear;transition:border-color 0.3s linear;}a:hover{border-bottom:1px solid #999;-webkit-transition:border-color 0.1s linear;-moz-transition:border-color 0.1s linear;-o-transition:border-color 0.1s linear;transition:border-color 0.1s linear;}</style>\n"
 "</head>\n"
-"<body>\n"
-"	<h1>Index of %s</h1>\n"
+"<body>\n";
+
+char errorContainerContent[] =
+"	<h1>%s</h1>"
+"	<p>%s</p>";
+
+char listContainerHeader[] =
+"	<h1>%s</h1>\n"
 "	<ul id=\"listing\">\n";
 
 char listContainerContent[] =
-"		<li><a href=\"%s:%d%s%s\">%s</a></li>\n";
+"		<li><a href=\"%s\">%s</a></li>\n";
 
 char listContainerFooter[] =
-"	</ul>\n"
+"	</ul>\n";
+
+char pageContainerFooter[] =
 "</body>\n"
 "</html>\n";
 
@@ -62,6 +70,17 @@ char listContainerFooter[] =
 #define NOT_EXIST 2
 #define IS_DIR 1
 #define IS_FILE 0
+
+int outputErrorMessage (int fd, char *outputBuffer, char *errorTitle, char *errorContent)
+{
+	sprintf(outputBuffer, pageContainerHeader, errorTitle);
+	write(fd, outputBuffer, strlen(outputBuffer));
+	sprintf(outputBuffer, errorContainerContent, errorTitle, errorContent);
+	write(fd, outputBuffer, strlen(outputBuffer));
+	sprintf(outputBuffer, pageContainerFooter);
+	write(fd, outputBuffer, strlen(outputBuffer));
+	return 0;
+}
 
 int outputListing (int fd, char *directoryBuffer, char *outputBuffer)
 {
@@ -87,8 +106,12 @@ int outputListing (int fd, char *directoryBuffer, char *outputBuffer)
 		return FORBIDDEN;
 	}
 
-	sprintf(directoryName, "/%s", directoryBuffer);
-	sprintf(outputBuffer, listContainerHeader, directoryName, directoryName);
+	sprintf(outputBuffer, "HTTP/1.1 200 OK\r\n");
+	write(fd, outputBuffer, strlen(outputBuffer));
+	sprintf(directoryName, "Index of /%s", directoryBuffer);
+	sprintf(outputBuffer, pageContainerHeader, directoryName);
+	write(fd, outputBuffer, strlen(outputBuffer));
+	sprintf(outputBuffer, listContainerHeader, directoryName);
 	write(fd, outputBuffer, strlen(outputBuffer));
 
 	while (ep = readdir (dp))
@@ -98,9 +121,6 @@ int outputListing (int fd, char *directoryBuffer, char *outputBuffer)
 			continue;
 		}
 		sprintf(outputBuffer, listContainerContent,
-			 siteUri,
-			 portNumber,
-			 directoryName,
 			 ep->d_name,
 			 ep->d_name
 			);
@@ -109,6 +129,8 @@ int outputListing (int fd, char *directoryBuffer, char *outputBuffer)
 	(void) closedir (dp);
 
 	sprintf(outputBuffer, listContainerFooter);
+	write(fd, outputBuffer, strlen(outputBuffer));
+	sprintf(outputBuffer, pageContainerFooter);
 	write(fd, outputBuffer, strlen(outputBuffer));
 	
 	return WRITE_OK;
@@ -133,8 +155,9 @@ int writeFile (int fd, char *uriBuffer, char *outputBuffer)
 
 	/* open file */
 	if (!(file_fd=open(uriBuffer, O_RDONLY))) {
-		sprintf(outputBuffer,"HTTP/1.1 403 Forbidden\r\n\r\n");
+		sprintf(outputBuffer,"HTTP/1.1 403 Forbidden\r\n");
 		write(fd, outputBuffer, strlen(outputBuffer));
+		outputErrorMessage(fd, outputBuffer, "403 — Forbiden", "The web server doesn't have permission to access this page.");
 		return FORBIDDEN;
 	}
 
@@ -256,8 +279,9 @@ void handle_socket(int fd)
 	switch (checkFileStatus(uriBuffer))
 	{
 	case NOT_EXIST:
-		sprintf(outputBuffer, "HTTP/1.1 404 Not Found\r\n\r\n");
+		sprintf(outputBuffer, "HTTP/1.1 404 Not Found\r\n");
 		write(fd, outputBuffer, strlen(outputBuffer));
+		outputErrorMessage(fd, outputBuffer, "404 — Not Found", "The page you requested did not found.");
 		exit(3);
 		break;
 
