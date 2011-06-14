@@ -84,7 +84,7 @@ int outputErrorMessage (int fd, char outputBuffer[], char *errorTitle, char *err
 	write(fd, outputBuffer, strlen(outputBuffer));
 	sprintf(outputBuffer, errorContainerContent, errorTitle, errorContent);
 	write(fd, outputBuffer, strlen(outputBuffer));
-	sprintf(outputBuffer, pageContainerFooter);
+	strcpy(outputBuffer, pageContainerFooter);
 	write(fd, outputBuffer, strlen(outputBuffer));
 	return 0;
 }
@@ -135,9 +135,9 @@ int outputListing (int fd, char *directoryBuffer, char *outputBuffer)
 	}
 	(void) closedir (dp);
 
-	sprintf(outputBuffer, listContainerFooter);
+	strcpy(outputBuffer, listContainerFooter);
 	write(fd, outputBuffer, strlen(outputBuffer));
-	sprintf(outputBuffer, pageContainerFooter);
+	strcpy(outputBuffer, pageContainerFooter);
 	write(fd, outputBuffer, strlen(outputBuffer));
 	
 	return WRITE_OK;
