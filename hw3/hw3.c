@@ -78,7 +78,7 @@ char *parameterBuffer=NULL, *inputBuffer=NULL;
 #define PUT 3
 #define DELETE 4
 
-int outputErrorMessage (int fd, char *outputBuffer, char *errorTitle, char *errorContent)
+int outputErrorMessage (int fd, char outputBuffer[], char *errorTitle, char *errorContent)
 {
 	sprintf(outputBuffer, pageContainerHeader, errorTitle);
 	write(fd, outputBuffer, strlen(outputBuffer));
@@ -121,7 +121,7 @@ int outputListing (int fd, char *directoryBuffer, char *outputBuffer)
 	sprintf(outputBuffer, listContainerHeader, directoryName);
 	write(fd, outputBuffer, strlen(outputBuffer));
 
-	while (ep = readdir (dp))
+	while ((ep = readdir (dp)) != NULL)
 	{
 		if (ep->d_name[0] == '.')
 		{
@@ -175,7 +175,7 @@ int writeFile (int fd, char *uriBuffer, char *outputBuffer)
 			outputErrorMessage(fd, outputBuffer, "403 — Forbiden", "The web server doesn't have permission to access this page.");
 			return FORBIDDEN;
 		}
-		sprintf(outputBuffer,"HTTP/1.1 200 OK\r\n", fstr);
+		sprintf(outputBuffer,"HTTP/1.1 200 OK\r\n");
 		write(fd, outputBuffer, strlen(outputBuffer));
 		while (fgets(outputBuffer, BUFSIZE, cgi_fd)) {
 			write(fd, outputBuffer, strlen(outputBuffer));
@@ -195,7 +195,7 @@ int writeFile (int fd, char *uriBuffer, char *outputBuffer)
 	/* file unsupported */
 	if(fstr == 0) {
 		/* return FILE_NOT_SUPPORTED; */
-		sprintf(outputBuffer,"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n\r\n", fstr);
+		sprintf(outputBuffer,"HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n\r\n");
 	}
 	else
 	{
@@ -234,9 +234,8 @@ int checkFileStatus(const char *dname) {
 
 void handle_socket(int fd)
 {
-	int file_fd, urilen;
+	int urilen;
 	long i, ret;
-	char * fstr;
 	static char cmdBuffer[BUFSIZE+1], uriBuffer2[BUFSIZE+1];
 	static char outputBuffer[BUFSIZE+1];
 	static char *uriBuffer;
@@ -324,7 +323,7 @@ void handle_socket(int fd)
 
 	if (urilen == 0)
 	{
-		sprintf(uriBuffer2, "index.html", uriBuffer);
+		sprintf(uriBuffer2, "index.html");
 
 		switch (checkFileStatus(uriBuffer2)) {
 			case NOT_EXIST:
@@ -385,7 +384,7 @@ void handle_socket(int fd)
 
 int main(int argc, char **argv)
 {
-	int i, pid, listenfd, socketfd;
+	int pid, listenfd, socketfd;
 	size_t length;
 	static struct sockaddr_in cli_addr;
 	static struct sockaddr_in serv_addr;
