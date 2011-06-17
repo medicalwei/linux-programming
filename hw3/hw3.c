@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
+#include <time.h>
 #include <dirent.h>
 
 #define BUFSIZE 8192
@@ -42,23 +43,25 @@ char pageContainerHeader[] =
 "<head>\n"
 "	<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">\n"
 "	<title>%s</title>\n"
-"	<style>html{font-family:\"Helvetica Neue\",\"Helvetica\",\"Nimbus Sans\",\"Arial\",sans-serif;color:#666;background:url(\"artworks/ntou.png\") 95\% bottom no-repeat #ccc;min-height:100\%;}body{width:720px;margin:0 auto;padding:0 0 40pt;font-weight:300;}h1{font-weight:500;text-shadow:0 2px 0 rgba(0,0,0,0.2),0 -1px 0 rgba(255,255,255,0.2);color:#666;margin-top:40pt;}a{color:#333;border-bottom:1px solid #ccc;text-decoration:none;-webkit-transition:border-color 0.3s linear;-moz-transition:border-color 0.3s linear;-o-transition:border-color 0.3s linear;transition:border-color 0.3s linear;}a:hover{border-bottom:1px solid #999;-webkit-transition:border-color 0.1s linear;-moz-transition:border-color 0.1s linear;-o-transition:border-color 0.1s linear;transition:border-color 0.1s linear;}</style>\n"
+"	<link rel=\"stylesheet\" href=\"http://shadow.ind.ntou.edu.tw/DIRSTYLE.css\" type=\"text/css\" />"
 "</head>\n"
 "<body>\n";
 
 char errorContainerContent[] =
-"	<h1>%s</h1>"
-"	<p>%s</p>";
+"	<h1>%s</h1>\n"
+"	<p>%s</p>\n";
 
 char listContainerHeader[] =
 "	<h1>%s</h1>\n"
-"	<ul id=\"listing\">\n";
+"	<table><thead><tr><th>Name</th><th>Last modified</th><th>Size</th></tr>\n"
+"	<tbody>\n";
 
 char listContainerContent[] =
-"		<li><a href=\"%s\">%s</a></li>\n";
+"	<tr><td><a href=\"%s\">%s</td><td>%s</td><td>%d</td></tr>\n";
 
 char listContainerFooter[] =
-"	</ul>\n";
+"	</tbody>\n"
+"	</table>\n";
 
 char pageContainerFooter[] =
 "</body>\n"
@@ -96,6 +99,7 @@ int outputListing (int fd, char *directoryBuffer, char *outputBuffer)
 	
 	DIR *dp;
 	struct dirent *ep;
+	struct stat status;
 	
 	if(directoryBuffer[0] == 0)
 	{
@@ -127,10 +131,16 @@ int outputListing (int fd, char *directoryBuffer, char *outputBuffer)
 		{
 			continue;
 		}
+
+		stat (ep->d_name, &status);
+
 		sprintf(outputBuffer, listContainerContent,
 			 ep->d_name,
-			 ep->d_name
+			 ep->d_name,
+			 asctime(localtime(&status.st_mtime)),
+			 status.st_size
 			);
+
 		write(fd, outputBuffer, strlen(outputBuffer));
 	}
 	(void) closedir (dp);
