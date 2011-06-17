@@ -127,11 +127,6 @@ int outputListing (int fd, char *directoryBuffer, char *outputBuffer)
 
 	while ((ep = readdir (dp)) != NULL)
 	{
-		if (ep->d_name[0] == '.')
-		{
-			continue;
-		}
-
 		stat (ep->d_name, &status);
 
 		sprintf(outputBuffer, listContainerContent,
@@ -173,7 +168,7 @@ int writeFile (int fd, char *uriBuffer, char *outputBuffer)
 	}
 
 	/* cgi */
-	if(strncmp(uriBuffer, "cgi-bin/", 8) == 0)
+	if(strncmp(&uriBuffer[strlen(uriBuffer)-4], ".cgi\0", 5) == 0)
 	{
 		strcpy (uriBuffer2, "./");
 		strncat (uriBuffer2, uriBuffer, BUFSIZE);
